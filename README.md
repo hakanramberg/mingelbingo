@@ -2,6 +2,8 @@
 
 Mingelbingo är en Cloudflare Worker med statiska sidor och en gemensam D1-databas.
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/hakanramberg/mingelbingo)
+
 ## Funktioner
 
 - Deltagarbrickan hämtar påståenden centralt och kontrollerar uppdateringar var 30:e sekund.
@@ -11,7 +13,6 @@ Mingelbingo är en Cloudflare Worker med statiska sidor och en gemensam D1-datab
 
 ## Driftsättning
 
-1. Skapa en D1-databas och ersätt `REPLACE_WITH_D1_DATABASE_ID` i `wrangler.jsonc`.
-2. Kör migreringen i `migrations/0001_initial.sql`.
-3. Lägg in `ADMIN_PASSWORD` som en Worker-hemlighet.
-4. Kör `npm install` och `npm run deploy`.
+Klicka på **Deploy to Cloudflare** ovan. Cloudflare skapar D1-databasen automatiskt och ber dig välja `ADMIN_PASSWORD` innan publicering. Databasmigreringen körs som en del av distributionen.
+
+För manuell distribution kör du `npm install` och `npm run deploy`. Lösenordet ska lagras som Worker-hemligheten `ADMIN_PASSWORD`, aldrig i källkoden.

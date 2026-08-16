@@ -4,9 +4,15 @@ function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: jsonHeaders });
 }
 
-function authorized(request, env) {
+async function authorized(request, env) {
   const supplied = request.headers.get("x-admin-password") || "";
-  return Boolean(env.ADMIN_PASSWORD) && supplied === env.ADMIN_PASSWORD;
+  if (!env.ADMIN_PASSWORD) return false;
+  const encoder = new TextEncoder();
+  const [suppliedHash, expectedHash] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(supplied)),
+    crypto.subtle.digest("SHA-256", encoder.encode(env.ADMIN_PASSWORD))
+  ]);
+  return crypto.subtle.timingSafeEqual(suppliedHash, expectedHash);
 }
 
 async function readConfig(env, includeAnswers = false) {
@@ -27,6 +33,10 @@ async function readConfig(env, includeAnswers = false) {
 }
 
 async function updateConfig(request, env) {
+  const contentLength = Number(request.headers.get("content-length") || 0);
+  if (!contentLength || contentLength > 131072) {
+    return json({ error: "För stor eller ofullständig begäran." }, 413);
+  }
   let body;
   try {
     body = await request.json();
@@ -62,15 +72,20 @@ async function updateConfig(request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname === "/api/config" && request.method === "GET") {
-      return json(await readConfig(env, false));
+    try {
+      if (url.pathname === "/api/config" && request.method === "GET") {
+        return json(await readConfig(env, false));
+      }
+      if (url.pathname === "/api/admin/config") {
+        if (!await authorized(request, env)) return json({ error: "Fel lösenord." }, 401);
+        if (request.method === "GET") return json(await readConfig(env, true));
+        if (request.method === "PUT") return updateConfig(request, env);
+        return json({ error: "Metoden stöds inte." }, 405);
+      }
+      return env.ASSETS.fetch(request);
+    } catch (error) {
+      console.error(JSON.stringify({ message: "request failed", path: url.pathname, error: error instanceof Error ? error.message : String(error) }));
+      return json({ error: "Ett tillfälligt fel uppstod." }, 500);
     }
-    if (url.pathname === "/api/admin/config") {
-      if (!authorized(request, env)) return json({ error: "Fel lösenord." }, 401);
-      if (request.method === "GET") return json(await readConfig(env, true));
-      if (request.method === "PUT") return updateConfig(request, env);
-      return json({ error: "Metoden stöds inte." }, 405);
-    }
-    return env.ASSETS.fetch(request);
   }
 };
