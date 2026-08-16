@@ -1,0 +1,24 @@
+{
+  "name": "mingelbingo",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "npm run db:migrations:apply && wrangler deploy",
+    "db:migrations:apply": "wrangler d1 migrations apply DB --remote",
+    "check": "node --check src/index.js"
+  },
+  "cloudflare": {
+    "bindings": {
+      "DB": {
+        "description": "Gemensam databas för påståenden och rätt namn."
+      },
+      "ADMIN_PASSWORD": {
+        "description": "Välj ett starkt lösenord för Mingelbingos adminsida."
+      }
+    }
+  },
+  "devDependencies": {
+    "wrangler": "^4.68.0"
+  }
+}
